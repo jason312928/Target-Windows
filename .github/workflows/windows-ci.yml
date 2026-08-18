@@ -1,0 +1,22 @@
+name: Windows CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+      - name: Restore
+        run: dotnet restore Target.Windows.sln
+      - name: Build
+        run: dotnet build Target.Windows.sln --configuration Debug --no-restore -p:Platform=x64
+      - name: Test
+        run: dotnet test Target.Windows.sln --configuration Debug --no-build -p:Platform=x64
