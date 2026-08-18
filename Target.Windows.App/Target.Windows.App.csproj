@@ -19,5 +19,6 @@
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\Target.Windows.Core\Target.Windows.Core.csproj" />
+    <ProjectReference Include="..\Target.Windows.Runtime\Target.Windows.Runtime.csproj" />
   </ItemGroup>
 </Project>

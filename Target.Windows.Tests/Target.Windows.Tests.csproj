@@ -9,6 +9,7 @@
   </PropertyGroup>
   <ItemGroup>
     <ProjectReference Include="..\Target.Windows.Core\Target.Windows.Core.csproj" />
+    <ProjectReference Include="..\Target.Windows.Runtime\Target.Windows.Runtime.csproj" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.13.0" />
