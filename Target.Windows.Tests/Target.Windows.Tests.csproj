@@ -16,5 +16,6 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="..\Target.Windows.App\ProductInfo.cs" Link="ProductInfo.cs" />
+    <Compile Include="..\Target.Windows.App\AppDestination.cs" Link="AppDestination.cs" />
   </ItemGroup>
 </Project>

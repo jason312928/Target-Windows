@@ -6,12 +6,26 @@
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     mc:Ignorable="d"
     Title="Target">
-    <Grid Padding="32" RowSpacing="12">
-        <Grid.RowDefinitions>
-            <RowDefinition Height="Auto" />
-            <RowDefinition Height="*" />
-        </Grid.RowDefinitions>
-        <TextBlock Text="Target" FontSize="28" FontWeight="SemiBold" />
-        <TextBlock Grid.Row="1" Text="A focused Windows workspace." Opacity="0.72" />
-    </Grid>
+    <NavigationView x:Name="ShellNavigationView"
+                    IsBackButtonVisible="Collapsed"
+                    IsSettingsVisible="False"
+                    PaneDisplayMode="Auto"
+                    SelectionChanged="ShellNavigationView_SelectionChanged">
+        <NavigationView.MenuItems>
+            <NavigationViewItem Content="Dashboard" Icon="Home" Tag="dashboard" AutomationProperties.AutomationId="Target.Navigation.Dashboard" />
+            <NavigationViewItem Content="Profiles" Icon="Contact" Tag="profiles" AutomationProperties.AutomationId="Target.Navigation.Profiles" />
+            <NavigationViewItem Content="Connections" Icon="Link" Tag="connections" AutomationProperties.AutomationId="Target.Navigation.Connections" />
+            <NavigationViewItem Content="Traffic" Icon="Switch" Tag="traffic" AutomationProperties.AutomationId="Target.Navigation.Traffic" />
+            <NavigationViewItem Content="Logs" Icon="Document" Tag="logs" AutomationProperties.AutomationId="Target.Navigation.Logs" />
+        </NavigationView.MenuItems>
+
+        <Grid Padding="32" MaxWidth="960" HorizontalAlignment="Left" VerticalAlignment="Top" RowSpacing="12">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+            </Grid.RowDefinitions>
+            <TextBlock x:Name="DestinationTitle" FontSize="28" FontWeight="SemiBold" />
+            <TextBlock x:Name="DestinationDescription" Grid.Row="1" TextWrapping="Wrap" Opacity="0.72" />
+        </Grid>
+    </NavigationView>
 </Window>
