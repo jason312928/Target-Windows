@@ -35,7 +35,9 @@ function Invoke-PinnedVersion([string] $ExecutablePath) {
     $startInfo.CreateNoWindow = $true
     $startInfo.RedirectStandardOutput = $true
     $startInfo.RedirectStandardError = $true
-    [void]$startInfo.ArgumentList.Add('version')
+    # Windows PowerShell 5.1/.NET Framework does not expose ArgumentList.
+    # This is a fixed, non-user-controlled argument and is safe to quote as-is.
+    $startInfo.Arguments = 'version'
 
     $process = [Diagnostics.Process]::new()
     $process.StartInfo = $startInfo
@@ -46,7 +48,9 @@ function Invoke-PinnedVersion([string] $ExecutablePath) {
 
         $stdout = $process.StandardOutput.ReadLineAsync()
         if (-not $process.WaitForExit(10000)) {
-            $process.Kill($false)
+            # This process was created by this invocation and is the exact
+            # child whose bounded version check timed out.
+            $process.Kill()
             throw 'The sing-box version command timed out.'
         }
 
@@ -73,6 +77,9 @@ try {
 
     [IO.Directory]::CreateDirectory($workDirectory) | Out-Null
     try {
+    # Windows PowerShell 5.1 does not load System.Net.Http for type
+    # resolution by default.
+    Add-Type -AssemblyName System.Net.Http
     $handler = [Net.Http.HttpClientHandler]::new()
     $handler.AllowAutoRedirect = $true
     $client = [Net.Http.HttpClient]::new($handler)
@@ -92,7 +99,7 @@ try {
                 throw 'The sing-box archive exceeds the download size limit.'
             }
 
-            $input = $response.Content.ReadAsStream()
+            $input = $response.Content.ReadAsStreamAsync().GetAwaiter().GetResult()
             $output = [IO.FileStream]::new(
                 $archivePath,
                 [IO.FileMode]::CreateNew,
@@ -150,15 +157,52 @@ try {
     Invoke-PinnedVersion $extractedExecutable
     [IO.Directory]::CreateDirectory($binDirectory) | Out-Null
     $stagedExecutable = Join-Path $binDirectory (".sing-box." + [Guid]::NewGuid().ToString('N') + '.tmp')
+    $backupExecutable = Join-Path $binDirectory (".sing-box." + [Guid]::NewGuid().ToString('N') + '.bak')
+    $hadExistingExecutable = [IO.File]::Exists($installedExecutable)
+    $postInstallVerified = $false
     try {
         [IO.File]::Copy($extractedExecutable, $stagedExecutable, $false)
-        [IO.File]::Move($stagedExecutable, $installedExecutable, $true)
+        if ($hadExistingExecutable) {
+            # File.Replace is available on .NET Framework and keeps the
+            # replacement on the same volume with a recovery backup.
+            [IO.File]::Replace($stagedExecutable, $installedExecutable, $backupExecutable, $true)
+        }
+        else {
+            [IO.File]::Move($stagedExecutable, $installedExecutable)
+        }
+
+        try {
+            Invoke-PinnedVersion $installedExecutable
+            $postInstallVerified = $true
+        }
+        catch {
+            if ($hadExistingExecutable -and [IO.File]::Exists($backupExecutable)) {
+                [IO.File]::Delete($installedExecutable)
+                [IO.File]::Move($backupExecutable, $installedExecutable)
+            }
+            elseif (-not $hadExistingExecutable) {
+                [IO.File]::Delete($installedExecutable)
+            }
+
+            throw
+        }
+
+        if ([IO.File]::Exists($backupExecutable)) {
+            [IO.File]::Delete($backupExecutable)
+        }
     }
     finally {
-        [IO.File]::Delete($stagedExecutable)
+        if ([IO.File]::Exists($stagedExecutable)) {
+            [IO.File]::Delete($stagedExecutable)
+        }
+
+        # If post-install verification did not complete, leave any backup in
+        # place as recovery evidence instead of deleting it blindly.
+        if (-not $postInstallVerified -and [IO.File]::Exists($backupExecutable)) {
+            Write-Warning "The previous sing-box executable remains available at '$backupExecutable'."
+        }
     }
 
-    Invoke-PinnedVersion $installedExecutable
     Write-Output "Installed sing-box $version for the current user."
     }
     finally {
